@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>blogPage</title>
+</head>
+<body>
+{% for blog in blogs %}
+<h1>{{ blog.subject }}</h1>
+   <!-- <h2>{{ blog.key().id() }}</h2>-->
+<p>{{ blog.blog }}</p>
+
+    <form method="post">
+    {% for like in like %}
+        {% if like.c_post_id == blog.key().id() %}
+
+               <button name="like_button_id" value="{{like.key().id()}}">LIKE {{ like.c_likes }}</button>
+         {% endif %}
+    {% endfor %}
+    </form>
+    <form method="post" action="blog/edit">
+    <button name="post_id" value="{{ blog.key().id()}}" >EDIT</button>
+    </form>
+
+
+    <hr>
+{%  endfor %}
+</body>
+</html>

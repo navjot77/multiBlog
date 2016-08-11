@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>edit blog</title>
+</head>
+<body>
+<form method="post" action="/blog/postEdition"><h1>{{ s.subject }}</h1>
+<textarea name="blog" value="{{ s.blog }}">{{ s.blog }}</textarea>
+<input type="hidden" name="blog_id" value="{{ s.key().id() }}">
+     <input type="submit">
+    </form>
+
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="post" action="/rot13">
+    <textarea name="text" style="height: 100px; width: 400px;" >{{items}}</textarea>
+    <br>
+    {% if items %}
+        <p>{{items}}</p>
+    {% endif %}
+    <input type="submit">
+</form>
+{% endblock %}
