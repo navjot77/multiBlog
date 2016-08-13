@@ -17,9 +17,19 @@
                <button name="like_button_id" value="{{like.key().id()}}">LIKE {{ like.c_likes }}</button>
          {% endif %}
     {% endfor %}
+    {% for comment in comments %}
+        {% if comment.comment_id == blog.key().id() %}
+            {% for each_comment in comment.comment_list %}
+                <p>{{ each_comment }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
     </form>
     <form method="post" action="blog/edit">
     <button name="post_id" value="{{ blog.key().id()}}" >EDIT</button>
+    </form >
+    <form method="post" action="blog/addcomment">
+     <button name="post_id" value="{{ blog.key().id()}}" >Comment</button>
     </form>
 
 

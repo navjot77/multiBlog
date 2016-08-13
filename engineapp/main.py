@@ -187,10 +187,10 @@ class Login(MainHandler):
         self.render('login-form.html')
 
     def post(self):
-        username = self.request.get('username')
-        password = self.request.get('password')
+        self.username = self.request.get('username')
+        self.password = self.request.get('password')
 
-        u = User.login(username, password)
+        u = User.login(self.username, self.password)
         if u:
             self.login(u)
             self.redirect('/blog')
@@ -242,7 +242,7 @@ class Blog(db.Model):
 class  LIKE(db.Model):
     c_post_id=db.IntegerProperty(required=True)
     c_likes=db.IntegerProperty()
-    like_list=db.ListProperty(long)
+    like_list=db.StringListProperty()
 
 class BlogPage(MainHandler):
     def render_front(self, subject="", blog='', error=''):
@@ -258,16 +258,17 @@ class BlogPage(MainHandler):
         user_subject = self.request.get("subject")
         user_blog = self.request.get("blog")
         if user_blog and user_subject:
-            a = Blog(subject=user_subject, blog=user_blog, owner=self.uid)
+            a = Blog(subject=user_subject, blog=user_blog, owner=self.user.user_name)
             a_key = a.put()
             list_appended=[]
             #logging.info("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
             #logging.info(a.owner)
-            list_appended.append(a.owner)
-            #logging.info("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+            list_appended.append(self.user.user_name)
+
+            logging.info("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
             #logging.info(a_key.id())
-            #logging.info(list_appended)
-            b=LIKE(c_post_id=a_key.id(), c_likes=0, like_list=list_appended)
+            logging.info(list_appended)
+            b=LIKE(c_post_id=a_key.id(), c_likes=0, like_list=[self.user.user_name])
             b.put()
             self.redirect('/blog/%d' % a_key.id())
         else:
@@ -298,15 +299,36 @@ class MainBlogPage(MainHandler):
         #   db.delete(employee_k)
         blogs = db.GqlQuery("select * from Blog order by created desc ")
         likes = db.GqlQuery("select * from LIKE")
+        comments = db.GqlQuery("select * from COMMENT")
+
+        # for blog in blogs:
+        # x   blog.delete()
+        logging.info("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+        for comment in comments:
+            logging.info(comment.comment_id)
+            for each_comment in comment.comment_list:
+                logging.info(each_comment)
+        #try:
+         #   while True:
+          #      q = db.GqlQuery("SELECT __key__ FROM LIKE")
+           #     assert q.count()
+            #    db.delete(q.fetch(200))
+
+       # except Exception, e:
+        #    self.response.out.write(repr(e) + '\n')
+         #   pass
         #for blog in blogs:
-         #   blog.delete()
+         #x   blog.delete()
+        logging.info(likes)
+        #db.delete(likes.fetch(100))
+        #ogging.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         #for like in likes:
-         #   like.delete()
+         #   logging.info(like)
 
 
         #  for like in likes:
         #    logging.info(likes.c_post)
-        self.render('blog.html', blogs=blogs, like=likes)
+        self.render('blog.html', blogs=blogs, like=likes,comments=comments)
 
     def get(self):
         if self.user:
@@ -327,9 +349,12 @@ class MainBlogPage(MainHandler):
         s = LIKE.get_by_id(int(like_button_id))
 
         logging.info(s.like_list)
-        if long(self.uid) in s.like_list:
+        if (self.user.user_name) in s.like_list:
             logging.info("Item found")
         else:
+            updated_list=s.like_list
+            updated_list.append(self.user.user_name)
+            s.like_list = updated_list
             logging.info("Item not found " )
             s.c_likes = s.c_likes + 1
             s.put()
@@ -345,7 +370,7 @@ class EditBlog(MainHandler):
 
         post_id=self.request.get("post_id")
         post = Blog.get_by_id(int(post_id))
-        if(self.uid == post.owner):
+        if(self.user.user_name == post.owner):
             self.render_front(post_id)
         else:
             self.redirect("/blog")
@@ -369,12 +394,59 @@ class PostEdition(MainHandler):
             self.redirect('/blog')
         else:
             error = "Pl input field."
-            self.render_front(subject=user_subject, blog=user_blog, error=error)
+            post = Blog.get_by_id(int(blog_id))
+            self.render('edit-blog.html', s=post,error=error)
+
+class COMMENT(db.Model):
+    comment_id = db.IntegerProperty(required=True)
+    comment_list = db.StringListProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+
+
+class AddingComment(MainHandler):
+    def post(self):
+        blog_id=self.request.get("blog_id")
+        comment = self.request.get("comment")
+        logging.info("~~~~~~~~~~~~~~~~~~~~~~~%s and %s"%(blog_id, comment))
+        if comment:
+            comment_obj = COMMENT.get_by_id(int(blog_id))
+            if comment_obj and blog_id in comment_obj.comment_list:
+                list_of_comment=comment_obj.comment_list
+                list_of_comment.append(comment)
+                comment_obj.put()
+            else:
+                a = COMMENT(comment_id=int(blog_id), comment_list=[comment])
+                a_key = a.put()
+                a_key = a.put()
+                self.redirect('/blog')
+
+        else:
+            self.redirect('/blog/addcomment?post_id=' + blog_id)
+
+
+class AddComment(MainHandler):
+    def render_front(self, post_id):
+        s = Blog.get_by_id(int(post_id))
+        self.render('adding-comment.html', s=s)
+
+    def get(self):
+
+        # put check for owner and blog's owner from id
+
+        blog_id = self.request.get("post_id")
+        #post_id = Blog.get_by_id(int(blog_id))
+        self.render_front(blog_id)
+
+    def post(self):
+        post_id = self.request.get("post_id")
+        self.redirect('/blog/addcomment?post_id=' + post_id)
+
 
 
 app = webapp2.WSGIApplication([('/blog/newpost', BlogPage), ('/blog/(\d+)', Permalink), ('/blog', MainBlogPage),
                                ('/blog/register',Register),('/blog/welcome',ThanksHandler),('/blog/login',Login),
-                               ('/blog/logout',Logout),('/blog/edit',EditBlog),('/blog/postEdition',PostEdition)],
+                               ('/blog/logout',Logout),('/blog/edit',EditBlog),('/blog/postEdition',PostEdition),
+                               ('/blog/addcomment',AddComment),('/blog/comment',AddingComment)],
                               debug=True)
 
 
