@@ -184,7 +184,13 @@ class ThanksHandler(webapp2.RequestHandler):
 
 class Login(MainHandler):
     def get(self):
-        self.render('login-form.html')
+        if self.user:
+            self.logout()
+            self.redirect('/blog')
+        else:
+            self.render('login-form.html')
+
+
 
     def post(self):
         self.username = self.request.get('username')
@@ -252,7 +258,7 @@ class BlogPage(MainHandler):
         if self.user:
            self.render_front()
         else:
-            self.redirect('/blog/register')
+            self.redirect('/blog/login')
 
     def post(self):
         user_subject = self.request.get("subject")
@@ -290,24 +296,30 @@ class Permalink(MainHandler):
         #key = db.Key.from_path('LIKE', int(blog_id[0]))
         #like_key = db.get(key)
         #likes=LIKE.get_by_id(like_key)
-        self.render('blog.html', blogs=[s],like=likes)
+        self.render('blog.html', blogs=[s],like=likes, newblog='True')
 
 
 class MainBlogPage(MainHandler):
-    def render_front(self):
+    def render_front(self,like_error="",comment_error="",like_error_id="",comment_error_id=""):
         #    employee_k = db.Key.from_path('Blog',5629499534213120)
         #   db.delete(employee_k)
-        blogs = db.GqlQuery("select * from Blog order by created desc ")
+        blogs_all = db.GqlQuery("select * from Blog order by created desc ")
         likes = db.GqlQuery("select * from LIKE")
         comments = db.GqlQuery("select * from COMMENT")
+#        for blog in blogs_all:
+ ##
+   ####  try:
+       #     while True:
+        #        q = db.GqlQuery("SELECT __key__ FROM LIKE")
+         ##  db.delete(q.fetch(200))
 
+#        except Exception, e:
+ #           self.response.out.write(repr(e) + '\n')
+
+
+        blogs = blogs_all.fetch(limit=10)
         # for blog in blogs:
         # x   blog.delete()
-        logging.info("<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
-        for comment in comments:
-            logging.info(comment.comment_id)
-            for each_comment in comment.comment_list:
-                logging.info(each_comment)
         #try:
          #   while True:
           #      q = db.GqlQuery("SELECT __key__ FROM LIKE")
@@ -328,38 +340,84 @@ class MainBlogPage(MainHandler):
 
         #  for like in likes:
         #    logging.info(likes.c_post)
-        self.render('blog.html', blogs=blogs, like=likes,comments=comments)
+        self.render('blog.html', blogs=blogs, like=likes,comments=comments,like_error=like_error,like_error_id=like_error_id,
+                    comment_error=comment_error,comment_error_id=comment_error_id,current_user=self.user.user_name)
 
     def get(self):
         if self.user:
             self.render_front()
         else:
-            self.redirect('/blog/register')
+            self.redirect('/blog/login')
 
 
     def post(self):
+        post_id = self.request.get("post_id")
+        comment_clicked=False
+        if post_id:
+            comment_clicked=True
+            s = Blog.get_by_id(int(post_id))
+
+            if self.user.user_name == s.owner:
+                logging.info("***************************************************")
+                comment_error_id = int(post_id)
+
+                comment_error = "Owner of Blog not authorize to comment on his/her blog"
+                #    employee_k = db.Key.from_path('Blog',5629499534213120)
+                #   db.delete(employee_k)
+                blogs = db.GqlQuery("select * from Blog order by created desc ")
+                likes = db.GqlQuery("select * from LIKE")
+                comments = db.GqlQuery("select * from COMMENT")
+                self.render_front(comment_error=comment_error,comment_error_id=comment_error_id)
+
+            else:
+                logging.info("***************************************************12")
+                self.redirect('/blog/addcomment?post_id=' + post_id)
+
+        else:
+            pass
+
 
         like_button_id=self.request.get("like_button_id")
-       # key = db.Key.from_path('LIKE',like_button_id)
-        #like_key = db.get(key)
-        logging.info("***************************************************")
+        like_error_id = ""
+        like_error = ""
+        if like_button_id:
 
-        logging.info(long(self.uid))
-        logging.info(self.user.user_name)
-        s = LIKE.get_by_id(int(like_button_id))
+            logging.info("***************************************************13")
+           # key = db.Key.from_path('LIKE',like_button_id)
+            #like_key = db.get(key)
 
-        logging.info(s.like_list)
-        if (self.user.user_name) in s.like_list:
-            logging.info("Item found")
+
+            logging.info(long(self.uid))
+            logging.info(self.user.user_name)
+            s = LIKE.get_by_id(int(like_button_id))
+
+            logging.info(s.like_list)
+            if (self.user.user_name) in s.like_list:
+                logging.info("Item found")
+                like_error="Error: Author not authorize to like own Blog. Or You likes the blog already"
+                like_error_id = int(like_button_id)
+                self.render_front(like_error=like_error, like_error_id=like_error_id)
+
+
+            else:
+
+                logging.info("***************************************************14")
+                updated_list=s.like_list
+                updated_list.append(self.user.user_name)
+                s.like_list = updated_list
+                logging.info("Item not found " )
+                s.c_likes = s.c_likes + 1
+                s.put()
+                s.put()
+                self.redirect('/blog')
         else:
-            updated_list=s.like_list
-            updated_list.append(self.user.user_name)
-            s.like_list = updated_list
-            logging.info("Item not found " )
-            s.c_likes = s.c_likes + 1
-            s.put()
-            s.put()
-        self.render_front()
+
+            logging.info("***************************************************15")
+            pass
+
+        logging.info("***************************************************16")
+
+
 class EditBlog(MainHandler):
     def render_front(self,post_id):
         s = Blog.get_by_id(int(post_id))
@@ -403,6 +461,7 @@ class COMMENT(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
 
 
+
 class AddingComment(MainHandler):
     def post(self):
         blog_id=self.request.get("blog_id")
@@ -430,16 +489,9 @@ class AddComment(MainHandler):
         self.render('adding-comment.html', s=s)
 
     def get(self):
-
-        # put check for owner and blog's owner from id
-
         blog_id = self.request.get("post_id")
-        #post_id = Blog.get_by_id(int(blog_id))
         self.render_front(blog_id)
 
-    def post(self):
-        post_id = self.request.get("post_id")
-        self.redirect('/blog/addcomment?post_id=' + post_id)
 
 
 
