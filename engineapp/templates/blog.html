@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/html">
-<head>
+<!-- This is home page where all the blogs, comments etc will be rendered on
+    screen -->
+
 <!-- Below tag is for responsive view-->
 <meta name="viewport" content="width=device-width,
 minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
@@ -15,54 +16,64 @@ href=
 <script
 src="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js">
 </script>
-<!-- This links to fonts library which are used in css-->
-<link href='https://fonts.googleapis.com/css?family=Raleway:300'
-rel='stylesheet' type='text/css'>
-<link rel="stylesheet" href="css/main.css" />
-<link rel="stylesheet" href="http://weloveiconfonts.com/api/?family=zocial" />
-<link href='https://fonts.googleapis.com/css?family=Noto+Sans'
-rel='stylesheet' type='text/css'>
-<!--It is being used to get the icons which are later used in footer -->
-<link rel="stylesheet" href="http://weloveiconfonts.com/api/?family=zocial" />
 </head>
 <body>
-<ul class="nav nav-pills" style="border-bottom: solid rosybrown 1em; margin-top:1.5em; padding-bottom: 1em; margin-left: 2em;margin-right: 2em;">
+<ul class="nav nav-pills" style="border-bottom: solid rosybrown 1em;
+   margin-top:1.5em; padding-bottom: 1em; margin-left: 2em;margin-right: 2em;">
   <li role="presentation" class="active"><a href="/blog">Home</a></li>
   <li role="presentation"><a href="/blog/newpost">New Post</a></li>
   <li role="presentation"><a href="/blog/logout">Logout</a></li>
 </ul>
-<p style="text-align: right;margin-right: 2em">Logged In :<em>{{ current_user }}</em></p>
 
-
+<!-- Below tag displays the current user logged in-->
+<p style="text-align: right;margin-right: 2em">
+    Logged In :<em>{{ current_user }}</em>
+</p>
+<!-- Jinja2 template provides for loop that can be used to display
+    various elements in html page -->
 {% for blog in blogs %}
-<h1 style="color:#7D3DA6; font-family: 'Segoe UI Semibold'; margin-left: 0.4em">{{ blog.subject }}</h1>
-<p style="text-align: right; color:darkgoldenrod; margin-right:2em">Author: {{ blog.owner }}</p>
-<p style="text-align: right; color:darkgoldenrod;margin-right: 2em">Created: {{ blog.created }}</p>
-   <!-- <h2>{{ blog.key().id() }}</h2>-->
-<blockquote style="margin-left: 0.5em">{{ blog.blog }}</blockquote>
+    <h1 style="color:#7D3DA6; font-family: 'Segoe UI Semibold'; margin-left: 0.4em">{{ blog.subject }}</h1>
+    <p style="text-align: right; color:darkgoldenrod; margin-right:2em">
+    Author: {{ blog.owner }}
+    </p>
+    <p style="text-align: right; color:darkgoldenrod;margin-right: 2em">
+    Created: {{ blog.created }}
+    </p>
+
+    <blockquote style="margin-left: 0.5em">{{ blog.blog }}</blockquote>
 
     <form method="post">
     {% for like in like %}
         {% if like.c_post_id == blog.key().id() %}
-                {% if newblog %}
-         <input type="hidden"></input>
-     {% else %}
-               <button name="like_button_id" value="{{like.key().id()}}" style="margin-left: 1em">LIKE {{ like.c_likes }}</button>
-{% endif %}
-                {% if like_error_id == like.key().id() %}
-                    <p style="color:red; margin:1em">{{ like_error }}</p>
-                    {% endif %}
-         {% endif %}
+<!--If user entered new blog, then a new page will be rendered to view what
+will be getting posted, so in that case as this is only view page, we hide
+ like, comment and edit  buttons  else if user clicks them : error will be
+ generated-->
+            {% if newblog %}
+                <input type="hidden">
+            {% else %}
+                <button name="like_button_id" value="{{like.key().id()}}"
+                        style="margin-left: 1em">LIKE {{ like.c_likes }}</button>
+            {% endif %}
+            {% if like_error_id == like.key().id() %}
+                <p style="color:red; margin:1em">{{ like_error }}</p>
+            {% endif %}
+        {% endif %}
     {% endfor %}
-     {% set check_comments = [] %}
-    <h3 style="color:#A0C3FF; font:'Segoe UI Semibold'; margin-left: 0.4em">Comments:</h3>
-
-                {% if comment_error_id == blog.key().id() %}
-                <p style="color:red; margin:1em">{{ comment_error }}</p>
-                {% endif %}
+    {% set check_comments = [] %}
+    <h3 style="color:#A0C3FF; font:'Segoe UI Semibold'; margin-left: 0.4em">
+        Comments:
+    </h3>
+ <!-- This check is to see wether main.py sends error message and error id
+ if so, then we only have to display to corresponding blog not all so
+ we will be seeing comment_error_id which will be blog id for which
+ error is generated-->
+    {% if comment_error_id == blog.key().id() %}
+        <p style="color:red; margin:1em">{{ comment_error }}
+        </p>
+    {% endif %}
     {% for comment in comments %}
         {% if comment.comment_id == blog.key().id() %}
-
             {% for each_comment in comment.comment_list %}
                 {% if check_comments.append(1) %}
                 {% endif %}
@@ -70,12 +81,12 @@ rel='stylesheet' type='text/css'>
             {% endfor %}
 
         {% endif %}
-                    {% endfor %}
+    {% endfor %}
     {% if check_comments |count == 0 %}
     <blockquote style="margin-left:2em">No Comments Yet, click Comment to add</blockquote>
     {% endif %}
      {% if newblog %}
-         <input type="hidden"></input>
+         <input type="hidden">
      {% else %}
     </form>
     <form method="post" action="/blog/edit">
@@ -87,7 +98,11 @@ rel='stylesheet' type='text/css'>
     {% endif %}
 
     {% if newblog %}
-        <a href="/blog" ><button class="btn btn-primary" style="margin-top: 4em; margin-left: 1em"> MAIN PAGE </button></a>
+        <a href="/blog">
+            <p class="btn btn-primary" style="margin-top: 4em; margin-left: 1em">
+                MAIN PAGE
+            </p>
+        </a>
     {% endif %}
 
 

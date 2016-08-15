@@ -1,17 +1,18 @@
 <!DOCTYPE html>
+<!-- This page renders when user wishes to add comment to
+      any blog except his/her own blog-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>adding comment</title>
 </head>
 <body>
-<form method="post" action="/blog/comment"><h1>{{ s.subject }}</h1>
-<h2>{{ s.blog }}</h2>
-    <textarea name="comment"></textarea>
-<input type="hidden" name="blog_id" value="{{ s.key().id() }}">
-     <input type="submit">
+    <form method="post" action="/blog/comment">
+        <h1>{{ s.subject }}</h1>
+        <h2>{{ s.blog }}</h2>
+        <textarea name="comment"></textarea>
+        <input type="hidden" name="blog_id" value="{{ s.key().id() }}">
+        <input type="submit">
     </form>
-
-
 </body>
 </html>

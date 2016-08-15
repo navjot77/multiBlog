@@ -1,3 +1,4 @@
+<!-- When User click new post, this page will get rendered -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,9 +7,19 @@
 </head>
 <body>
 <form method="post">
-    <label><div>Subject</div><input type="text" name="subject" value="{{subject}}"></label>
-    <div>Blog</div><textarea name="blog" value="{{ blog }}"></textarea>
-     <div class="error">{{ error }}</div>
+    <label>
+        <div>
+            Subject
+        </div>
+        <input type="text" name="subject" value="{{subject}}">
+    </label>
+    <div>
+        Blog
+    </div>
+    <textarea name="blog" value="{{ blog }}"></textarea>
+     <div class="error">
+         {{ error }}
+     </div>
     <input type="submit">
 
 </form>

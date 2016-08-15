@@ -1,10 +1,31 @@
+<!DOCTYPE html>
+<!-- This page renders when new user wants to register -->
+<!-- Here extends keyword uses the base page as fundation and then replaces
+    the block content with base page. So we can use base page's template -->
+<head>
+    <title>SignUp</title>
+</head>
 {% extends "base.html" %}
 {% block content %}
 <form method="post">
-<label>User Name <input type="text" name="userName" value="{{ items['UserName'] }}"> <p style="color: red;">{{ items['UserError'] }}</p></label>
-<label>Password <input type="password" name="password"> </label> <p style="color: red;">{{ items['PassError'] }}</p>
-<label>Re-Enter password <input type="password" name="passwordRe"> </label> <p style="color: red;">{{ items['PassReError'] }}</p>
-<label>Email<input type="text" name="email" value="{{ items['email']}}"> </label> <p style="color: red;">{{ items['EmailError'] }}</p>
+<label>User Name
+    <input type="text" name="userName" value="{{ items['UserName'] }}">
+</label>
+<p style="color: red;">{{ items['UserError'] }}</p>
+
+
+<label>Password
+    <input type="password" name="password">
+</label>
+    <p style="color: red;">{{ items['PassError'] }}</p>
+<label>Re-Enter password
+    <input type="password" name="passwordRe">
+</label>
+    <p style="color: red;">{{ items['PassReError'] }}</p>
+<label>Email
+    <input type="text" name="email" value="{{ items['email']}}">
+</label>
+    <p style="color: red;">{{ items['EmailError'] }}</p>
 <input type="submit">
 </form>
 {% endblock %}

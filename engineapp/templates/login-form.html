@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 
+<!--This files gets rendered when user wishes to login,
+ or when user logs out or when user tries to open main page without logged in. -->
+
 <html>
   <head>
     <title>Login</title>
@@ -7,11 +10,11 @@
       .label {text-align: right}
       .error {color: red}
     </style>
-
   </head>
-
   <body>
-    <h1 style="color:burlywood, font:'Segoe UI Semibold', text-align: center;">Login Form</h1>
+    <h1 style="color:burlywood, font:'Segoe UI Semibold', text-align: center;">
+        Login Form
+    </h1>
     <form method="post">
       <table>
         <tr>
@@ -22,7 +25,6 @@
             <input type="text" name="username" value="{{username}}">
           </td>
         </tr>
-
         <tr>
           <td class="label">
             <h3>Password</h3>
@@ -32,16 +34,14 @@
           </td>
         </tr>
       </table>
-
       <div class="error">
         {{error}}
       </div>
-
       <input type="submit">
     </form>
-
-  <h2>New User ?</h2>
-  <h2><a href="/blog/register"><button>Register Here</button></a></h2>
+    <h2>New User ?</h2>
+    <h2 >
+        <a href="/blog/register"><em style="background-color: antiquewhite">Register Here</em></a></h2>
   </body>
 
 </html>
