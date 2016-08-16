@@ -25,10 +25,7 @@ src="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js">
   <li role="presentation"><a href="/blog/logout">Logout</a></li>
 </ul>
 
-<!-- Below tag displays the current user logged in-->
-<p style="text-align: right;margin-right: 2em">
-    Logged In :<em>{{ current_user }}</em>
-</p>
+
 <!-- Jinja2 template provides for loop that can be used to display
     various elements in html page -->
 {% for blog in blogs %}
@@ -85,16 +82,26 @@ will be getting posted, so in that case as this is only view page, we hide
     {% if check_comments |count == 0 %}
     <blockquote style="margin-left:2em">No Comments Yet, click Comment to add</blockquote>
     {% endif %}
-     {% if newblog %}
-         <input type="hidden">
-     {% else %}
-    </form>
+       </form>
     <form method="post" action="/blog/edit">
     <button name="post_id" value="{{ blog.key().id()}}" style="margin-left: 0.7em">EDIT</button>
     </form >
+     {% if newblog %}
+         <input type="hidden">
+     {% else %}
+
     <form method="post">
      <button name="post_id" value="{{ blog.key().id()}}" style="margin-top: 1em; margin-left: 0.7em" >Comment</button>
     </form>
+
+    <form method="post">
+     <button name="delete_post_id" value="{{ blog.key().id()}}" style="margin-top: 1em; margin-left: 0.7em" >Delete</button>
+    </form>
+
+    {% if delete_error_id == blog.key().id() %}
+        <p style="color:red; margin:1em">{{ delete_error }}
+        </p>
+    {% endif %}
     {% endif %}
 
     {% if newblog %}

@@ -42,4 +42,6 @@ Project Specifications:
      For details click:
 https://cloud.google.com/appengine/docs/python/getting-started/python-standard-env
 
+To run at localhost: http://localhost:8080/blog
+
 To see the pubic view, check at http://mythic-producer-137123.appspot.com/blog

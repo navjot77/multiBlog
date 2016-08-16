@@ -140,6 +140,7 @@ class Register(MainHandler):
         email_error = ""
         pass_re_error = ""
         check_re_pass = "Ok"
+        page_rendered=False
         if (user_pass != user_pass_re):
             pass_re_error = "Password does not match"
             check_re_pass = None
@@ -147,7 +148,16 @@ class Register(MainHandler):
             u = User.by_name(user_name)
             if u:
                 msg = 'That user already exists.'
-                self.render('signup-form.html', error_username=msg)
+                self.send_data("sign-up.html",
+                               items={"UserName": "",
+                                      "email": user_email,
+                                      "UserError": user_error,
+                                      "PassError": pass_error,
+                                      "EmailError": email_error,
+                                      "PassReError": pass_re_error,
+                                      "error_username" : msg})
+                page_rendered=True
+
             else:
                 u = User.register(user_name, user_pass, user_email)
                 u.put()
@@ -159,13 +169,15 @@ class Register(MainHandler):
             pass_error = "Password not correct"
         if not check_email:
             email_error = "Email Address not correct"
-        self.send_data("sign-up.html",
+        if not page_rendered:
+            self.send_data("sign-up.html",
                        items={"UserName": user_name,
                               "email": user_email,
                               "UserError": user_error,
                               "PassError": pass_error,
                               "EmailError": email_error,
-                              "PassReError": pass_re_error})
+                              "PassReError": pass_re_error,
+                              "error_username" : ""})
 
 
 class ThanksHandler(webapp2.RequestHandler):
@@ -199,12 +211,13 @@ class Login(MainHandler):
 class Logout(MainHandler):
 
     def get(self):
-        self.logout()
-        self.redirect('/blog')
+        if self.user:
+            self.logout()
+            self.render('logout.html')
+        else:
+            self.redirect('/blog/login')
 
 # password encryption
-
-
 def make_salt(length=5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -308,7 +321,8 @@ class MainBlogPage(MainHandler):
     def render_front(self, like_error="",
         comment_error="",
          like_error_id="",
-          comment_error_id=""):
+          comment_error_id="",current_user="",delete_error="",
+                     delete_error_id=""):
         blogs_all = db.GqlQuery("select * from Blog order by created desc ")
         likes = db.GqlQuery("select * from LIKE")
         comments = db.GqlQuery("select * from COMMENT")
@@ -318,66 +332,85 @@ class MainBlogPage(MainHandler):
              like_error_id=like_error_id,
                     comment_error=comment_error,
                      comment_error_id=comment_error_id,
-                      current_user=self.user.user_name)
+                    delete_error=delete_error,
+                    delete_error_id=delete_error_id,
+                      current_user=current_user)
 
     def get(self):
-        if self.user:
-            self.render_front()
-        else:
-            self.redirect('/blog/login')
+        self.render_front()
 
     def post(self):
-        post_id = self.request.get("post_id")
-        comment_clicked = False
-        if post_id:
-            comment_clicked = True
-            s = Blog.get_by_id(int(post_id))
-# check wether author of blog is current user, if so dnt let him comment
-            if self.user.user_name == s.owner:
-                comment_error_id = int(post_id)
+        if self.user:
+            post_id = self.request.get("post_id")
+            comment_clicked = False
+            if post_id:
+                comment_clicked = True
+                s = Blog.get_by_id(int(post_id))
+    # check wether author of blog is current user, if so dnt let him comment
+                if self.user.user_name == s.owner:
+                    comment_error_id = int(post_id)
 
-                comment_error =""""
-                Owner of Blog not authorize to comment on his/her blog"""
-                blogs = db.GqlQuery(
-                    "select * from Blog order by created desc ")
-                likes = db.GqlQuery("select * from LIKE")
-                comments = db.GqlQuery("select * from COMMENT")
-                self.render_front(
-                    comment_error=comment_error,
-                     comment_error_id=comment_error_id)
+                    comment_error =""""
+                    Owner of Blog not authorize to comment on his/her blog"""
+                    blogs = db.GqlQuery(
+                        "select * from Blog order by created desc ")
+                    likes = db.GqlQuery("select * from LIKE")
+                    comments = db.GqlQuery("select * from COMMENT")
+                    self.render_front(
+                        comment_error=comment_error,
+                         comment_error_id=comment_error_id,
+                        current_user=self.user.user_name)
+                else:
+                    self.redirect('/blog/addcomment?post_id=' + post_id)
+                    pass
             else:
-                self.redirect('/blog/addcomment?post_id=' + post_id)
+                pass
+
+            like_button_id = self.request.get("like_button_id")
+            like_error_id = ""
+            like_error = ""
+            if like_button_id:
+                s = LIKE.get_by_id(int(like_button_id))
+
+                # check wether author of blog/prviously likes the page is
+                # current user, if so dnt let him like
+                if (self.user.user_name) in s.like_list:
+                    logging.info("Item found")
+                    like_error ="""
+                    Error: Author not authorize to like own Blog.
+                      Or You likes the blog already"""
+                    like_error_id = int(like_button_id)
+                    self.render_front(
+                        like_error=like_error, like_error_id=like_error_id,
+                        current_user=self.user.user_name)
+                else:
+                    updated_list = s.like_list
+                    updated_list.append(self.user.user_name)
+                    s.like_list = updated_list
+                    s.c_likes = s.c_likes + 1
+                    s.put()
+                    s.put()
+                    self.redirect('/blog')
+            else:
+                pass
+
+            delete_post_id=self.request.get("delete_post_id")
+            if delete_post_id:
+                s = Blog.get_by_id(int(delete_post_id))
+                if s and self.user.user_name == s.owner:
+                    s.delete()
+                    s.delete()
+                    self.redirect('/blog')
+                #    self.render_front(current_user=self.user.user_name)
+                else:
+                    delete_error_id=int(delete_post_id)
+                    del_error="Only Owner is authorize to delete a blog"
+                    self.render_front(delete_error=del_error,delete_error_id=delete_error_id)
+
+            else:
                 pass
         else:
-            pass
-
-        like_button_id = self.request.get("like_button_id")
-        like_error_id = ""
-        like_error = ""
-        if like_button_id:
-            s = LIKE.get_by_id(int(like_button_id))
-            logging.info(s.like_list)
-
-            # check wether author of blog/prviously likes the page is
-            # current user, if so dnt let him like
-            if (self.user.user_name) in s.like_list:
-                logging.info("Item found")
-                like_error ="""
-                Error: Author not authorize to like own Blog.
-                  Or You likes the blog already"""
-                like_error_id = int(like_button_id)
-                self.render_front(
-                    like_error=like_error, like_error_id=like_error_id)
-            else:
-                updated_list = s.like_list
-                updated_list.append(self.user.user_name)
-                s.like_list = updated_list
-                s.c_likes = s.c_likes + 1
-                s.put()
-                s.put()
-                self.redirect('/blog')
-        else:
-            pass
+            self.redirect('/blog/login')
 
 
 class EditBlog(MainHandler):
@@ -387,12 +420,15 @@ class EditBlog(MainHandler):
         self.render('edit-blog.html', s=s)
 
     def get(self):
-        post_id = self.request.get("post_id")
-        post = Blog.get_by_id(int(post_id))
-        if(self.user.user_name == post.owner):
-            self.render_front(post_id)
+        if self.user:
+            post_id = self.request.get("post_id")
+            post = Blog.get_by_id(int(post_id))
+            if(self.user.user_name == post.owner):
+                self.render_front(post_id)
+            else:
+                self.redirect("/blog")
         else:
-            self.redirect("/blog")
+            self.redirect('/blog/login')
 
     def post(self):
         post_id = self.request.get("post_id")

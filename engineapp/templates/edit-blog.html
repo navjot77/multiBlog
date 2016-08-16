@@ -1,16 +1,40 @@
 <!DOCTYPE html>
 <!-- This page renders when user wishes to edit his/her own blog -->
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>edit blog</title>
+<!-- Below tag is for responsive view-->
+<meta name="viewport" content="width=device-width,
+minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+<meta charset="utf-8">
+<title>Edit a Blog</title>
+<link rel="stylesheet"
+href="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
+<link rel="stylesheet"
+href=
+"https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap-theme.min.css">
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script
+src="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js">
+</script>
 </head>
+<body>
+<ul class="nav nav-pills" style="border-bottom: solid rosybrown 1em;
+   margin-top:1.5em; padding-bottom: 1em; margin-left: 2em;margin-right: 2em;">
+  <li role="presentation" class="active"><a href="/blog">Home</a></li>
+  <li role="presentation"><a href="/blog/newpost">New Post</a></li>
+  <li role="presentation"><a href="/blog/logout">Logout</a></li>
+</ul>
+
     <body>
-        <form method="post" action="/blog/postEdition">
+
+         <form method="post" action="/blog/postEdition">
             <h1>{{ s.subject }}</h1>
             <textarea name="blog" value="{{ s.blog }}">{{ s.blog }}</textarea>
             <input type="hidden" name="blog_id" value="{{ s.key().id() }}">
             <input type="submit">
         </form>
-    </body>
+        <h2>
+            <a href="/blog" style="background-color: khaki; color:red;font-size:0.5em">
+                Cancel
+            </a>
+        </h2>
+     </body>
 </html>

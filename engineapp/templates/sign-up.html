@@ -12,6 +12,7 @@
     <input type="text" name="userName" value="{{ items['UserName'] }}">
 </label>
 <p style="color: red;">{{ items['UserError'] }}</p>
+    <p style="color: red;">{{ items['error_username'] }}</p>
 
 
 <label>Password
@@ -28,4 +29,12 @@
     <p style="color: red;">{{ items['EmailError'] }}</p>
 <input type="submit">
 </form>
+<h2>Already Register ?</h2>
+<h2 >
+    <a href="/blog/login">
+        <em style="background-color: antiquewhite">
+        Log-In
+        </em>
+    </a>
+</h2>
 {% endblock %}
