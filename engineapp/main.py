@@ -12,6 +12,7 @@ import hashlib
 import hmac
 from string import letters
 import random
+from google.appengine.ext.db import metadata
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(
@@ -287,6 +288,9 @@ class BlogPage(MainHandler):
             b = LIKE(
               c_post_id=a_key.id(), c_likes=0, like_list=[self.user.user_name])
             b.put()
+            c=COMMENT(comment_id=a_key.id(),comment_list=[],owner=self.user.user_name)
+            c.put()
+            c.put()
             self.redirect('/blog/%d' % a_key.id())
         else:
             error = "Pl input both fields."
@@ -322,10 +326,20 @@ class MainBlogPage(MainHandler):
         comment_error="",
          like_error_id="",
           comment_error_id="",current_user="",delete_error="",
-                     delete_error_id=""):
+                     delete_error_id="",comment_delete_error="",comment_delete_id="",
+                     comment_edit_error="",comment_edit_id=""):
         blogs_all = db.GqlQuery("select * from Blog order by created desc ")
         likes = db.GqlQuery("select * from LIKE")
         comments = db.GqlQuery("select * from COMMENT")
+        per_comments = db.GqlQuery("select * from PER_COMMENT")
+
+
+
+
+
+
+
+
         blogs = blogs_all.fetch(limit=10)
         self.render('blog.html', blogs=blogs, like=likes,
             comments=comments, like_error=like_error,
@@ -334,7 +348,12 @@ class MainBlogPage(MainHandler):
                      comment_error_id=comment_error_id,
                     delete_error=delete_error,
                     delete_error_id=delete_error_id,
-                      current_user=current_user)
+                      current_user=current_user,
+                    each_comment=per_comments,
+                    comment_delete_error=comment_delete_error,
+                    comment_delete_id=comment_delete_id,
+                    comment_edit_error=comment_edit_error,
+                    comment_edit_id=comment_edit_id)
 
     def get(self):
         self.render_front()
@@ -342,6 +361,8 @@ class MainBlogPage(MainHandler):
     def post(self):
         if self.user:
             post_id = self.request.get("post_id")
+
+            logging.info(post_id)
             comment_clicked = False
             if post_id:
                 comment_clicked = True
@@ -409,6 +430,36 @@ class MainBlogPage(MainHandler):
 
             else:
                 pass
+
+            each_comment_id_for_edit = self.request.get("each_comment_id_for_edit")
+            each_comment_id_for_delete = self.request.get("each_comment_id_for_delete")
+            logging.info("//////////////////////////////////")
+            if each_comment_id_for_edit:
+                comment_obj = PER_COMMENT.get_by_id(int(each_comment_id_for_edit))
+                logging.info("EDIT REQUEST")
+                if comment_obj.owner_comment == self.user.user_name:
+                    self.redirect('/blog/editComment?comment_id=' + each_comment_id_for_edit)
+                else:
+                    comment_delete_error = "Only author of blog can EDIT the comment"
+                    self.render_front(comment_edit_error=comment_delete_error,
+                                  comment_edit_id=int(each_comment_id_for_edit))
+            if each_comment_id_for_delete:
+                comment_obj = PER_COMMENT.get_by_id(int(each_comment_id_for_delete))
+                logging.info(comment_obj.owner_comment)
+                logging.info("DELETE REQUEST")
+                if comment_obj.owner_comment == self.user.user_name:
+                    comment_obj.delete()
+                    comment_obj.delete()
+                    self.redirect('/blog')
+                    comment_delete_error=""
+                else:
+                    comment_delete_error = "Only author of blog can delete the comment"
+                self.render_front(comment_delete_error=comment_delete_error,
+                                  comment_delete_id=int(each_comment_id_for_delete))
+
+
+
+
         else:
             self.redirect('/blog/login')
 
@@ -456,38 +507,128 @@ class COMMENT(db.Model):
     comment_id = db.IntegerProperty(required=True)
     comment_list = db.StringListProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
+    owner = db.StringProperty(required=False)
+
+class PER_COMMENT(db.Model):
+    per_comment_id=db.IntegerProperty()
+    owner_comment=db.StringProperty()
+    comment=db.StringProperty()
 
 
 class AddingComment(MainHandler):
 
+
     def post(self):
         blog_id = self.request.get("blog_id")
         comment = self.request.get("comment")
+        each_comment=self.request.get("each_comment")
         if comment:
             comment_obj = COMMENT.get_by_id(int(blog_id))
             if comment_obj and blog_id in comment_obj.comment_list:
+                logging.info("*************************************01")
                 list_of_comment = comment_obj.comment_list
                 list_of_comment.append(comment)
                 comment_obj.put()
+                each_comment_obj = PER_COMMENT.get_by_id(int(each_comment))
+                if each_comment_obj:
+                    each_comment_obj.comment=comment
+                    each_comment_obj.put()
+                    each_comment_obj.put()
+                else:
+                    logging.info("No each_comment_obj")
             else:
+                logging.info("*************************************02")
                 a = COMMENT(comment_id=int(blog_id), comment_list=[comment])
                 a_key = a.put()
                 a_key = a.put()
+                each_comment_obj = PER_COMMENT.get_by_id(int(each_comment))
+                if each_comment_obj:
+                    logging.info(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; %s"%comment)
+                    logging.info(each_comment_obj.comment)
+                    each_comment_obj.comment = comment
+                    each_comment_obj.put()
+                    each_comment_obj.put()
                 self.redirect('/blog')
 
+            logging.info("*************************************11")
+            obj=PER_COMMENT.get_by_id(int(each_comment))
+            if obj:
+                logging.info(obj.comment)
+                logging.info(obj.owner_comment)
+                logging.info("per comment id is %s" % obj.per_comment_id)
+            else:
+                logging.info("no obj found")
         else:
             self.redirect('/blog/addcomment?post_id=' + blog_id)
 
 
 class AddComment(MainHandler):
 
-    def render_front(self, post_id):
+    def render_front(self, post_id,each_comment):
         s = Blog.get_by_id(int(post_id))
-        self.render('adding-comment.html', s=s)
+        self.render('adding-comment.html', s=s,each_comment=each_comment)
 
     def get(self):
         blog_id = self.request.get("post_id")
-        self.render_front(blog_id)
+        each_comment = PER_COMMENT(per_comment_id=int(blog_id), owner_comment=self.user.user_name, comment='')
+        a_key =each_comment.put()
+        a_key =each_comment.put()
+        logging.info("per comment id is %s"%each_comment.per_comment_id)
+        self.render_front(blog_id,each_comment)
+
+
+def testing_above_code():
+    class AddingComment(MainHandler):
+
+        def post(self):
+            blog_id = self.request.get("blog_id")
+            comment = self.request.get("comment")
+            if comment:
+                comment_obj = COMMENT.get_by_id(int(blog_id))
+                if comment_obj and blog_id in comment_obj.comment_list:
+                    list_of_comment = comment_obj.comment_list
+                    list_of_comment.append(comment)
+                    comment_obj.put()
+                else:
+                    a = COMMENT(comment_id=int(blog_id), comment_list=[comment])
+                    a_key = a.put()
+                    a_key = a.put()
+                    self.redirect('/blog')
+
+            else:
+                self.redirect('/blog/addcomment?post_id=' + blog_id)
+
+
+    class AddComment(MainHandler):
+
+            def render_front(self, post_id):
+                s = Blog.get_by_id(int(post_id))
+                self.render('adding-comment.html', s=s)
+
+            def get(self):
+                blog_id = self.request.get("post_id")
+                self.render_front(blog_id)
+
+
+class EditComment(MainBlogPage):
+    def get(self):
+        comment_id=self.request.get("comment_id")
+        comment_obj=PER_COMMENT.get_by_id(int(comment_id))
+        if comment_obj:
+            self.render('edit-comment.html', comment_obj=comment_obj)
+        else:
+            self.redirect('/blog')
+    def post(self):
+        comment=self.request.get("comment")
+        comment_id = self.request.get("comment_id")
+        comment_obj = PER_COMMENT.get_by_id(int(comment_id))
+        if comment_obj:
+            comment_obj.comment=comment
+            comment_obj.put()
+            comment_obj.put()
+            self.redirect('/blog')
+
+
 
 app = webapp2.WSGIApplication([('/blog/newpost', BlogPage),
                                ('/blog/(\d+)', Permalink),
@@ -499,5 +640,6 @@ app = webapp2.WSGIApplication([('/blog/newpost', BlogPage),
                                ('/blog/edit', EditBlog),
                                ('/blog/postEdition', PostEdition),
                                ('/blog/addcomment', AddComment),
-                               ('/blog/comment', AddingComment)
+                               ('/blog/comment', AddingComment),
+                               ('/blog/editComment',EditComment),
                                ], debug=True)

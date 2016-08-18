@@ -58,9 +58,6 @@ will be getting posted, so in that case as this is only view page, we hide
         {% endif %}
     {% endfor %}
     {% set check_comments = [] %}
-    <h3 style="color:#A0C3FF; font:'Segoe UI Semibold'; margin-left: 0.4em">
-        Comments:
-    </h3>
  <!-- This check is to see wether main.py sends error message and error id
  if so, then we only have to display to corresponding blog not all so
  we will be seeing comment_error_id which will be blog id for which
@@ -69,29 +66,54 @@ will be getting posted, so in that case as this is only view page, we hide
         <p style="color:red; margin:1em">{{ comment_error }}
         </p>
     {% endif %}
-    {% for comment in comments %}
-        {% if comment.comment_id == blog.key().id() %}
-            {% for each_comment in comment.comment_list %}
-                {% if check_comments.append(1) %}
-                {% endif %}
-                <blockquote style="margin-left: 2em">{{ each_comment }}</blockquote>
-            {% endfor %}
 
+       </form>
+
+    {% for each_comment in each_comment %}
+
+        {% if each_comment.per_comment_id == blog.key().id()%}
+
+            {% if check_comments.append(1) %}
+            {% endif %}
+            <blockquote style="margin-left: 2em">{{ each_comment.comment }}</blockquote>
+            <p style="text-align: right;margin-right: 4em">by <em>{{ each_comment.owner_comment }}</em></p>
+              <form method="post">
+    <button name="each_comment_id_for_edit" value="{{ each_comment.key().id()}}" style="margin-left: 0.7em">EDIT</button>
+    <button name="each_comment_id_for_delete" value="{{ each_comment.key().id()}}" style="margin-left: 0.7em">DELETE</button>
+
+    </form >
+             {% if comment_delete_id == each_comment.key().id() %}
+                    <p style="color:red; margin:1em">{{ comment_delete_error }}
+                     </p>
+                    {% endif %}
+
+             {% if comment_edit_id == each_comment.key().id() %}
+                    <p style="color:red; margin:1em">{{ comment_edit_error }}
+                     </p>
+                    {% endif %}
         {% endif %}
-    {% endfor %}
+        {% endfor  %}
+
     {% if check_comments |count == 0 %}
     <blockquote style="margin-left:2em">No Comments Yet, click Comment to add</blockquote>
     {% endif %}
-       </form>
     <form method="post" action="/blog/edit">
     <button name="post_id" value="{{ blog.key().id()}}" style="margin-left: 0.7em">EDIT</button>
     </form >
+
      {% if newblog %}
          <input type="hidden">
+
      {% else %}
 
-    <form method="post">
-     <button name="post_id" value="{{ blog.key().id()}}" style="margin-top: 1em; margin-left: 0.7em" >Comment</button>
+<!--If user entered new blog, then a new page will be rendered to view what
+will be getting posted, so in that case as this is only view page, we hide
+ like, comment and edit  buttons  else if user clicks them : error will be
+ generated-->
+ <form method="post">
+
+        <button name="post_id" value="{{ blog.key().id()}}" style="margin-top: 1em; margin-left: 0.7em" >Comment</button>
+
     </form>
 
     <form method="post">

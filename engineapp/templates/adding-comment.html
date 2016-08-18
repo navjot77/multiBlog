@@ -12,6 +12,7 @@
         <h2>{{ s.blog }}</h2>
         <textarea name="comment"></textarea>
         <input type="hidden" name="blog_id" value="{{ s.key().id() }}">
+        <input type="hidden" name="each_comment" value="{{ each_comment.key().id() }}">
         <input type="submit">
     </form>
 </body>

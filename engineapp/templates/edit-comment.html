@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>edit-comment</title>
+</head>
+<body>
+<form method="post" action="/blog/editComment">
+
+        <textarea name="comment" >  {{ comment_obj.comment }}</textarea>
+        <input type="hidden" name="comment_id" value="{{ comment_obj.key().id() }}">
+        <input type="submit">
+    </form>
+
+<h2>
+    <a href="/blog" style="background-color: khaki; color:red;font-size:0.5em">
+        Cancel
+    </a>
+</h2>
+
+</body>
+</html>
