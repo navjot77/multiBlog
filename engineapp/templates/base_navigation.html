@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- This page renders when user wishes to edit his/her own blog -->
-<!-- Below tag is for responsive view-->
+<html>
 <head>
+<!-- Below tag is for responsive view-->
 <meta name="viewport" content="width=device-width,
 minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
 <meta charset="utf-8">
-<title>Edit a Blog</title>
+<title>Adding A new Blog</title>
 <link rel="stylesheet"
 href="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
 <link rel="stylesheet"
@@ -23,19 +23,8 @@ src="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js">
   <li role="presentation"><a href="/blog/newpost">New Post</a></li>
   <li role="presentation"><a href="/blog/logout">Logout</a></li>
 </ul>
+{% block content %}
+{% endblock %}
 
-    <body>
-
-         <form method="post" action="/blog/postEdition">
-            <h1>{{ s.subject }}</h1>
-            <textarea name="blog" value="{{ s.blog }}">{{ s.blog }}</textarea>
-            <input type="hidden" name="blog_id" value="{{ s.key().id() }}">
-            <input type="submit">
-        </form>
-        <h2>
-            <a href="/blog" style="background-color: khaki; color:red;font-size:0.5em">
-                Cancel
-            </a>
-        </h2>
-     </body>
+</body>
 </html>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- This is home page where all the blogs, comments etc will be rendered on
     screen -->
-
+<head>
 <!-- Below tag is for responsive view-->
 <meta name="viewport" content="width=device-width,
 minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
@@ -71,34 +71,49 @@ will be getting posted, so in that case as this is only view page, we hide
 
     {% for each_comment in each_comment %}
 
-        {% if each_comment.per_comment_id == blog.key().id()%}
+        {% if each_comment.per_comment_id == blog.key().id() %}
 
             {% if check_comments.append(1) %}
             {% endif %}
-            <blockquote style="margin-left: 2em">{{ each_comment.comment }}</blockquote>
-            <p style="text-align: right;margin-right: 4em">by <em>{{ each_comment.owner_comment }}</em></p>
-              <form method="post">
-    <button name="each_comment_id_for_edit" value="{{ each_comment.key().id()}}" style="margin-left: 0.7em">EDIT</button>
-    <button name="each_comment_id_for_delete" value="{{ each_comment.key().id()}}" style="margin-left: 0.7em">DELETE</button>
+            <blockquote style="margin-left: 2em">{{ each_comment.comment }}
+            <p style="text-align: right;margin-right: 4em">by
+                <em>{{ each_comment.owner_comment }}</em></p>
+              <form method="post" style="margin-left: 10em; margin-top:0.1em">
+    <button name="each_comment_id_for_edit"
+            value="{{ each_comment.key().id()}}"
+            style="margin-left: 0.7em" class="glyphicon glyphicon-edit">Edit
+    </button>
+    <button name="each_comment_id_for_delete"
+            value="{{ each_comment.key().id()}}"
+            style="margin-left: 0.7em" class="glyphicon glyphicon-trash" >Delete
+    </button>
 
     </form >
+            </blockquote>
              {% if comment_delete_id == each_comment.key().id() %}
-                    <p style="color:red; margin:1em">{{ comment_delete_error }}
+                    <p style="color:red; margin:1em">
+                        {{ comment_delete_error }}
                      </p>
                     {% endif %}
 
              {% if comment_edit_id == each_comment.key().id() %}
-                    <p style="color:red; margin:1em">{{ comment_edit_error }}
+                    <p style="color:red; margin:1em">
+                        {{ comment_edit_error }}
                      </p>
                     {% endif %}
         {% endif %}
         {% endfor  %}
 
     {% if check_comments |count == 0 %}
-    <blockquote style="margin-left:2em">No Comments Yet, click Comment to add</blockquote>
+    <blockquote style="margin-left:2em">
+        No Comments Yet, click Comment to add
+    </blockquote>
     {% endif %}
     <form method="post" action="/blog/edit">
-    <button name="post_id" value="{{ blog.key().id()}}" style="margin-left: 0.7em">EDIT</button>
+    <button name="post_id"
+            value="{{ blog.key().id()}}" style="margin-left: 0.7em">
+        EDIT
+    </button>
     </form >
 
      {% if newblog %}
@@ -112,12 +127,14 @@ will be getting posted, so in that case as this is only view page, we hide
  generated-->
  <form method="post">
 
-        <button name="post_id" value="{{ blog.key().id()}}" style="margin-top: 1em; margin-left: 0.7em" >Comment</button>
+        <button name="post_id" value="{{ blog.key().id()}}"
+                style="margin-top: 1em; margin-left: 0.7em" >Comment</button>
 
     </form>
 
     <form method="post">
-     <button name="delete_post_id" value="{{ blog.key().id()}}" style="margin-top: 1em; margin-left: 0.7em" >Delete</button>
+     <button name="delete_post_id" value="{{ blog.key().id()}}"
+             style="margin-top: 1em; margin-left: 0.7em" >Delete</button>
     </form>
 
     {% if delete_error_id == blog.key().id() %}
@@ -128,7 +145,8 @@ will be getting posted, so in that case as this is only view page, we hide
 
     {% if newblog %}
         <a href="/blog">
-            <p class="btn btn-primary" style="margin-top: 4em; margin-left: 1em">
+            <p class="btn btn-primary"
+               style="margin-top: 4em; margin-left: 1em">
                 MAIN PAGE
             </p>
         </a>

@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <title>edit-comment</title>
 </head>
-<body>
+{% extends "base_navigation.html" %}
+{% block content %}
 <form method="post" action="/blog/editComment">
 
-        <textarea name="comment" >  {{ comment_obj.comment }}</textarea>
-        <input type="hidden" name="comment_id" value="{{ comment_obj.key().id() }}">
+<textarea name="comment"
+          style="margin-top:2em; margin-left:2em" >{{ comment_obj.comment }}
+</textarea>
+        <input type="hidden"
+               name="comment_id" value="{{ comment_obj.key().id() }}">
         <input type="submit">
     </form>
 
@@ -18,5 +22,5 @@
     </a>
 </h2>
 
-</body>
+{%  endblock %}
 </html>

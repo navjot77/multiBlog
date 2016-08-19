@@ -6,14 +6,14 @@
     <meta charset="UTF-8">
     <title>adding comment</title>
 </head>
-<body>
-    <form method="post" action="/blog/comment">
+{% extends "base_navigation.html" %}
+{% block content %}
+    <form method="post" action="/blog/comment" style="margin: auto">
         <h1>{{ s.subject }}</h1>
-        <h2>{{ s.blog }}</h2>
+        <blockquote>{{ s.blog }}</blockquote>
         <textarea name="comment"></textarea>
         <input type="hidden" name="blog_id" value="{{ s.key().id() }}">
-        <input type="hidden" name="each_comment" value="{{ each_comment.key().id() }}">
         <input type="submit">
     </form>
-</body>
+{% endblock %}
 </html>

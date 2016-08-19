@@ -24,6 +24,63 @@ EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
 secret = 'Navjot'
 
 
+class COMMENT(db.Model):
+    comment_id = db.IntegerProperty(required=True)
+    comment_list = db.StringListProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    owner = db.StringProperty(required=False)
+
+
+class PER_COMMENT(db.Model):
+    per_comment_id = db.IntegerProperty()
+    owner_comment = db.StringProperty()
+    comment = db.TextProperty()
+
+
+class Blog(db.Model):
+    subject = db.TextProperty(required=True)
+    blog = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    owner = db.StringProperty(required=False)
+
+
+class LIKE(db.Model):
+    c_post_id = db.IntegerProperty(required=True)
+    c_likes = db.IntegerProperty()
+    like_list = db.StringListProperty()
+
+
+class User(db.Model):
+    user_name = db.StringProperty(required=True)
+    user_pw_hash = db.StringProperty(required=True)
+    user_email = db.StringProperty(required=True)
+
+# returns object to that id
+    @classmethod
+    def by_id(cls, uid):
+        return User.get_by_id(uid, parent=users_key())
+
+# returnd object to name.
+    @classmethod
+    def by_name(cls, name):
+        u = User.all().filter('user_name =', name).get()
+        return u
+
+    @classmethod
+    def register(cls, name, pw, email):
+        pw_hash = make_pw_hash(name, pw)
+        return User(parent=users_key(),
+                    user_name=name,
+                    user_pw_hash=pw_hash,
+                    user_email=email)
+
+    @classmethod
+    def login(cls, name, pw):
+        u = cls.by_name(name)
+        if u and valid_pw(name, pw, u.user_pw_hash):
+            return u
+
+
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
@@ -85,108 +142,86 @@ class MainHandler(webapp2.RequestHandler):
 def users_key(group='default'):
     return db.Key.from_path('User', group)
 
-
-class User(db.Model):
-    user_name = db.StringProperty(required=True)
-    user_pw_hash = db.StringProperty(required=True)
-    user_email = db.StringProperty(required=True)
-
-# returns object to that id
-    @classmethod
-    def by_id(cls, uid):
-        return User.get_by_id(uid, parent=users_key())
-
-# returnd object to name.
-    @classmethod
-    def by_name(cls, name):
-        u = User.all().filter('user_name =', name).get()
-        return u
-
-    @classmethod
-    def register(cls, name, pw, email):
-        pw_hash = make_pw_hash(name, pw)
-        return User(parent=users_key(),
-                    user_name=name,
-                    user_pw_hash=pw_hash,
-                    user_email=email)
-
-    @classmethod
-    def login(cls, name, pw):
-        u = cls.by_name(name)
-        if u and valid_pw(name, pw, u.user_pw_hash):
-            return u
-
-
 # class Register generates the sign-up page and then act on post
 # of sign-up page form.
 # IF data valid, sets the cookie for that user.
+
+
 class Register(MainHandler):
 
     def send_data(self, file, items=""):
         self.render(file, items=items)
 
     def get(self):
-        self.send_data("sign-up.html")
+        if self.user:
+            self.redirect('/blog')
+        else:
+            self.send_data("sign-up.html")
 
     def post(self):
-        user_name = self.request.get("userName")
-        user_pass = self.request.get("password")
-        user_pass_re = self.request.get("passwordRe")
-        user_email = self.request.get("email")
-        check_name = USER_RE.match(user_name)
-        check_email = EMAIL_RE.match(user_email)
-        check_pass = PASS_RE.match(user_pass)
-        user_error = ""
-        pass_error = ""
-        email_error = ""
-        pass_re_error = ""
-        check_re_pass = "Ok"
-        page_rendered=False
-        if (user_pass != user_pass_re):
-            pass_re_error = "Password does not match"
-            check_re_pass = None
-        if (check_pass and check_email and check_name and check_re_pass):
-            u = User.by_name(user_name)
-            if u:
-                msg = 'That user already exists.'
+        if self.user:
+            self.redirect('/blog')
+        else:
+            user_name = self.request.get("userName")
+            user_pass = self.request.get("password")
+            user_pass_re = self.request.get("passwordRe")
+            user_email = self.request.get("email")
+            check_name = USER_RE.match(user_name)
+            check_email = EMAIL_RE.match(user_email)
+            check_pass = PASS_RE.match(user_pass)
+            user_error = ""
+            pass_error = ""
+            email_error = ""
+            pass_re_error = ""
+            check_re_pass = "Ok"
+            page_rendered = False
+            if (user_pass != user_pass_re):
+                pass_re_error = "Password does not match"
+                check_re_pass = None
+            if (check_pass and check_email and check_name and check_re_pass):
+                u = User.by_name(user_name)
+                if u:
+                    msg = 'That user already exists.'
+                    self.send_data("sign-up.html",
+                                   items={"UserName": "",
+                                          "email": user_email,
+                                          "UserError": user_error,
+                                          "PassError": pass_error,
+                                          "EmailError": email_error,
+                                          "PassReError": pass_re_error,
+                                          "error_username": msg})
+                    page_rendered = True
+
+                else:
+                    u = User.register(user_name, user_pass, user_email)
+                    u.put()
+                    self.login(u)
+                    self.redirect('/blog')
+            if not check_name:
+                user_error = "User Name not correct"
+            if not check_pass:
+                pass_error = "Password not correct"
+            if not check_email:
+                email_error = "Email Address not correct"
+            if not page_rendered:
                 self.send_data("sign-up.html",
-                               items={"UserName": "",
+                               items={"UserName": user_name,
                                       "email": user_email,
                                       "UserError": user_error,
                                       "PassError": pass_error,
                                       "EmailError": email_error,
                                       "PassReError": pass_re_error,
-                                      "error_username" : msg})
-                page_rendered=True
-
-            else:
-                u = User.register(user_name, user_pass, user_email)
-                u.put()
-                self.login(u)
-                self.redirect('/blog')
-        if not check_name:
-            user_error = "User Name not correct"
-        if not check_pass:
-            pass_error = "Password not correct"
-        if not check_email:
-            email_error = "Email Address not correct"
-        if not page_rendered:
-            self.send_data("sign-up.html",
-                       items={"UserName": user_name,
-                              "email": user_email,
-                              "UserError": user_error,
-                              "PassError": pass_error,
-                              "EmailError": email_error,
-                              "PassReError": pass_re_error,
-                              "error_username" : ""})
+                                      "error_username": ""})
 
 
 class ThanksHandler(webapp2.RequestHandler):
 
     def get(self):
-        user_name = self.request.get('userName')
-        self.response.out.write("Welcome " + user_name)
-
+        if self.user:
+            user_name = self.request.get('userName')
+            self.response.out.write("Welcome " + user_name)
+        else:
+            self.redirect('/blog')
 
 class Login(MainHandler):
 
@@ -219,6 +254,8 @@ class Logout(MainHandler):
             self.redirect('/blog/login')
 
 # password encryption
+
+
 def make_salt(length=5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -235,36 +272,6 @@ def valid_pw(name, password, h):
     return h == make_pw_hash(name, password, salt)
 
 
-class MainPage(MainHandler):
-
-    def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
-        visit_cookie_str = self.request.cookies.get('visits')
-        visits = 0
-        if visit_cookie_str:
-            cookie_val = check_secure_val(visit_cookie_str)
-            if cookie_val:
-                visits = int(cookie_val)
-        visits = visits + 1
-        new_cookie_val = make_secure_val(str(visits))
-        self.response.headers.add_header(
-            'Set-Cookie', 'visits=%s' % new_cookie_val)
-        self.write("been here for %s times" % visits)
-
-
-class Blog(db.Model):
-    subject = db.StringProperty(required=True)
-    blog = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    owner = db.StringProperty(required=False)
-
-
-class LIKE(db.Model):
-    c_post_id = db.IntegerProperty(required=True)
-    c_likes = db.IntegerProperty()
-    like_list = db.StringListProperty()
-
-
 class BlogPage(MainHandler):
 
     def render_front(self, subject="", blog='', error=''):
@@ -277,33 +284,42 @@ class BlogPage(MainHandler):
             self.redirect('/blog/login')
 
     def post(self):
-        user_subject = self.request.get("subject")
-        user_blog = self.request.get("blog")
-        if user_blog and user_subject:
-            a = Blog(
-              subject=user_subject, blog=user_blog, owner=self.user.user_name)
-            a_key = a.put()
-            list_appended = []
-            list_appended.append(self.user.user_name)
-            b = LIKE(
-              c_post_id=a_key.id(), c_likes=0, like_list=[self.user.user_name])
-            b.put()
-            c=COMMENT(comment_id=a_key.id(),comment_list=[],owner=self.user.user_name)
-            c.put()
-            c.put()
-            self.redirect('/blog/%d' % a_key.id())
+        if self.user:
+            user_subject = self.request.get("subject")
+            user_blog = self.request.get("blog")
+            if user_blog and user_subject:
+                a = Blog(
+                    subject=user_subject, blog=user_blog,
+                    owner=self.user.user_name)
+                a_key = a.put()
+                list_appended = []
+                list_appended.append(self.user.user_name)
+                b = LIKE(
+                    c_post_id=a_key.id(), c_likes=0,
+                    like_list=[self.user.user_name])
+                b.put()
+                c = COMMENT(comment_id=a_key.id(), comment_list=[],
+                            owner=self.user.user_name)
+                c.put()
+                c.put()
+                self.redirect('/blog/%d' % a_key.id())
+            else:
+                error = "Pl input both fields."
+                self.render_front(
+                    subject=user_subject, blog=user_blog, error=error)
         else:
-            error = "Pl input both fields."
-            self.render_front(
-                subject=user_subject, blog=user_blog, error=error)
+            self.redirect('/blog/login')
 
 
 class Permalink(MainHandler):
 
     def get(self, blog_id):
-        s = Blog.get_by_id(int(blog_id))
-        likes = db.GqlQuery("select * from LIKE")
-        self.render('blog.html', blogs=[s], like=likes, newblog='True')
+        if self.user:
+            s = Blog.get_by_id(int(blog_id))
+            likes = db.GqlQuery("select * from LIKE")
+            self.render('blog.html', blogs=[s], like=likes, newblog='True')
+        else:
+            self.redirect('/blog/login')
 
 
 def delete_database():
@@ -315,7 +331,7 @@ def delete_database():
         except Exception, e:
             self.response.out.write(repr(e) + '\n')
     for blog in blogs:
-            blog.delete()
+        blog.delete()
 
 
 class MainBlogPage(MainHandler):
@@ -323,32 +339,25 @@ class MainBlogPage(MainHandler):
     # and then renders the blog.html
 
     def render_front(self, like_error="",
-        comment_error="",
-         like_error_id="",
-          comment_error_id="",current_user="",delete_error="",
-                     delete_error_id="",comment_delete_error="",comment_delete_id="",
-                     comment_edit_error="",comment_edit_id=""):
+                     comment_error="",
+                     like_error_id="",
+                     comment_error_id="", current_user="", delete_error="",
+                     delete_error_id="", comment_delete_error="",
+                     comment_delete_id="",
+                     comment_edit_error="", comment_edit_id=""):
         blogs_all = db.GqlQuery("select * from Blog order by created desc ")
         likes = db.GqlQuery("select * from LIKE")
         comments = db.GqlQuery("select * from COMMENT")
         per_comments = db.GqlQuery("select * from PER_COMMENT")
-
-
-
-
-
-
-
-
         blogs = blogs_all.fetch(limit=10)
         self.render('blog.html', blogs=blogs, like=likes,
-            comments=comments, like_error=like_error,
-             like_error_id=like_error_id,
+                    comments=comments, like_error=like_error,
+                    like_error_id=like_error_id,
                     comment_error=comment_error,
-                     comment_error_id=comment_error_id,
+                    comment_error_id=comment_error_id,
                     delete_error=delete_error,
                     delete_error_id=delete_error_id,
-                      current_user=current_user,
+                    current_user=current_user,
                     each_comment=per_comments,
                     comment_delete_error=comment_delete_error,
                     comment_delete_id=comment_delete_id,
@@ -356,7 +365,8 @@ class MainBlogPage(MainHandler):
                     comment_edit_id=comment_edit_id)
 
     def get(self):
-        self.render_front()
+            self.render_front()
+
 
     def post(self):
         if self.user:
@@ -371,7 +381,7 @@ class MainBlogPage(MainHandler):
                 if self.user.user_name == s.owner:
                     comment_error_id = int(post_id)
 
-                    comment_error =""""
+                    comment_error = """"
                     Owner of Blog not authorize to comment on his/her blog"""
                     blogs = db.GqlQuery(
                         "select * from Blog order by created desc ")
@@ -379,7 +389,7 @@ class MainBlogPage(MainHandler):
                     comments = db.GqlQuery("select * from COMMENT")
                     self.render_front(
                         comment_error=comment_error,
-                         comment_error_id=comment_error_id,
+                        comment_error_id=comment_error_id,
                         current_user=self.user.user_name)
                 else:
                     self.redirect('/blog/addcomment?post_id=' + post_id)
@@ -397,7 +407,7 @@ class MainBlogPage(MainHandler):
                 # current user, if so dnt let him like
                 if (self.user.user_name) in s.like_list:
                     logging.info("Item found")
-                    like_error ="""
+                    like_error = """
                     Error: Author not authorize to like own Blog.
                       Or You likes the blog already"""
                     like_error_id = int(like_button_id)
@@ -415,7 +425,7 @@ class MainBlogPage(MainHandler):
             else:
                 pass
 
-            delete_post_id=self.request.get("delete_post_id")
+            delete_post_id = self.request.get("delete_post_id")
             if delete_post_id:
                 s = Blog.get_by_id(int(delete_post_id))
                 if s and self.user.user_name == s.owner:
@@ -424,41 +434,46 @@ class MainBlogPage(MainHandler):
                     self.redirect('/blog')
                 #    self.render_front(current_user=self.user.user_name)
                 else:
-                    delete_error_id=int(delete_post_id)
-                    del_error="Only Owner is authorize to delete a blog"
-                    self.render_front(delete_error=del_error,delete_error_id=delete_error_id)
+                    delete_error_id = int(delete_post_id)
+                    del_error = "Only Owner is authorize to delete a blog"
+                    self.render_front(delete_error=del_error,
+                                      delete_error_id=delete_error_id)
 
             else:
                 pass
 
-            each_comment_id_for_edit = self.request.get("each_comment_id_for_edit")
-            each_comment_id_for_delete = self.request.get("each_comment_id_for_delete")
-            logging.info("//////////////////////////////////")
+            each_comment_id_for_edit = self.request.get(
+                "each_comment_id_for_edit")
+            each_comment_id_for_delete = self.request.get(
+                "each_comment_id_for_delete")
             if each_comment_id_for_edit:
-                comment_obj = PER_COMMENT.get_by_id(int(each_comment_id_for_edit))
+                comment_obj = PER_COMMENT.get_by_id(
+                    int(each_comment_id_for_edit))
                 logging.info("EDIT REQUEST")
                 if comment_obj.owner_comment == self.user.user_name:
-                    self.redirect('/blog/editComment?comment_id=' + each_comment_id_for_edit)
+                    self.redirect(
+                        '/blog/editComment?comment_id=' +
+                        each_comment_id_for_edit)
                 else:
-                    comment_delete_error = "Only author of blog can EDIT the comment"
+                    comment_delete_error = \
+                        "Only author of blog can EDIT the comment"
                     self.render_front(comment_edit_error=comment_delete_error,
-                                  comment_edit_id=int(each_comment_id_for_edit))
+                        comment_edit_id=int(each_comment_id_for_edit))
             if each_comment_id_for_delete:
-                comment_obj = PER_COMMENT.get_by_id(int(each_comment_id_for_delete))
+                comment_obj = PER_COMMENT.get_by_id(
+                    int(each_comment_id_for_delete))
                 logging.info(comment_obj.owner_comment)
                 logging.info("DELETE REQUEST")
                 if comment_obj.owner_comment == self.user.user_name:
                     comment_obj.delete()
                     comment_obj.delete()
                     self.redirect('/blog')
-                    comment_delete_error=""
+                    comment_delete_error = ""
                 else:
-                    comment_delete_error = "Only author of blog can delete the comment"
+                    comment_delete_error =\
+                        "Only author of blog can delete the comment"
                 self.render_front(comment_delete_error=comment_delete_error,
-                                  comment_delete_id=int(each_comment_id_for_delete))
-
-
-
+                        comment_delete_id=int(each_comment_id_for_delete))
 
         else:
             self.redirect('/blog/login')
@@ -482,157 +497,113 @@ class EditBlog(MainHandler):
             self.redirect('/blog/login')
 
     def post(self):
-        post_id = self.request.get("post_id")
-        self.redirect('/blog/edit?post_id='+post_id)
+        if self.user:
+            post_id = self.request.get("post_id")
+            self.redirect('/blog/edit?post_id='+post_id)
+        else:
+            self.redirect('/blog/login')
 
 
 class PostEdition(MainHandler):
 
     def post(self):
-        blog_id = self.request.get("blog_id")
-        user_blog = self.request.get("blog")
-        if user_blog:
-            post = Blog.get_by_id(int(blog_id))
-            post.blog = user_blog
-            post.put()
-            post.put()
-            self.redirect('/blog')
+        if self.user:
+            blog_id = self.request.get("blog_id")
+            user_blog = self.request.get("blog")
+            if user_blog:
+                post = Blog.get_by_id(int(blog_id))
+                post.blog = user_blog
+                post.put()
+                post.put()
+                self.redirect('/blog')
+            else:
+                error = "Pl input field."
+                post = Blog.get_by_id(int(blog_id))
+                self.render('edit-blog.html', s=post, error=error)
         else:
-            error = "Pl input field."
-            post = Blog.get_by_id(int(blog_id))
-            self.render('edit-blog.html', s=post, error=error)
-
-
-class COMMENT(db.Model):
-    comment_id = db.IntegerProperty(required=True)
-    comment_list = db.StringListProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    owner = db.StringProperty(required=False)
-
-class PER_COMMENT(db.Model):
-    per_comment_id=db.IntegerProperty()
-    owner_comment=db.StringProperty()
-    comment=db.StringProperty()
-
+            self.redirect("/blog")
 
 class AddingComment(MainHandler):
 
-
     def post(self):
-        blog_id = self.request.get("blog_id")
-        comment = self.request.get("comment")
-        each_comment=self.request.get("each_comment")
-        if comment:
-            comment_obj = COMMENT.get_by_id(int(blog_id))
-            if comment_obj and blog_id in comment_obj.comment_list:
-                logging.info("*************************************01")
-                list_of_comment = comment_obj.comment_list
-                list_of_comment.append(comment)
-                comment_obj.put()
-                each_comment_obj = PER_COMMENT.get_by_id(int(each_comment))
-                if each_comment_obj:
-                    each_comment_obj.comment=comment
-                    each_comment_obj.put()
-                    each_comment_obj.put()
-                else:
-                    logging.info("No each_comment_obj")
-            else:
-                logging.info("*************************************02")
-                a = COMMENT(comment_id=int(blog_id), comment_list=[comment])
-                a_key = a.put()
-                a_key = a.put()
-                each_comment_obj = PER_COMMENT.get_by_id(int(each_comment))
-                if each_comment_obj:
-                    logging.info(";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; %s"%comment)
-                    logging.info(each_comment_obj.comment)
-                    each_comment_obj.comment = comment
-                    each_comment_obj.put()
-                    each_comment_obj.put()
-                self.redirect('/blog')
-
-            logging.info("*************************************11")
-            obj=PER_COMMENT.get_by_id(int(each_comment))
-            if obj:
-                logging.info(obj.comment)
-                logging.info(obj.owner_comment)
-                logging.info("per comment id is %s" % obj.per_comment_id)
-            else:
-                logging.info("no obj found")
-        else:
-            self.redirect('/blog/addcomment?post_id=' + blog_id)
-
-
-class AddComment(MainHandler):
-
-    def render_front(self, post_id,each_comment):
-        s = Blog.get_by_id(int(post_id))
-        self.render('adding-comment.html', s=s,each_comment=each_comment)
-
-    def get(self):
-        blog_id = self.request.get("post_id")
-        each_comment = PER_COMMENT(per_comment_id=int(blog_id), owner_comment=self.user.user_name, comment='')
-        a_key =each_comment.put()
-        a_key =each_comment.put()
-        logging.info("per comment id is %s"%each_comment.per_comment_id)
-        self.render_front(blog_id,each_comment)
-
-
-def testing_above_code():
-    class AddingComment(MainHandler):
-
-        def post(self):
+        if self.user:
+            logging.info("****************************01")
             blog_id = self.request.get("blog_id")
             comment = self.request.get("comment")
             if comment:
+
+                logging.info("****************************02")
                 comment_obj = COMMENT.get_by_id(int(blog_id))
                 if comment_obj and blog_id in comment_obj.comment_list:
+                    logging.info("*************************************03")
                     list_of_comment = comment_obj.comment_list
                     list_of_comment.append(comment)
                     comment_obj.put()
+
                 else:
-                    a = COMMENT(comment_id=int(blog_id), comment_list=[comment])
-                    a_key = a.put()
-                    a_key = a.put()
+                    a = COMMENT(
+                        comment_id=int(blog_id), comment_list=[comment])
+                    a.put()
+                    each_comment = PER_COMMENT(per_comment_id=int(blog_id),
+                                          owner_comment=self.user.user_name,
+                                               comment=comment)
+                    each_comment.put()
+                    each_comment.put()
                     self.redirect('/blog')
 
             else:
                 self.redirect('/blog/addcomment?post_id=' + blog_id)
+        else:
+            self.redirect('/blog/login')
 
 
-    class AddComment(MainHandler):
+class AddComment(MainHandler):
 
-            def render_front(self, post_id):
-                s = Blog.get_by_id(int(post_id))
-                self.render('adding-comment.html', s=s)
+    def render_front(self, post_id):
+        s = Blog.get_by_id(int(post_id))
+        self.render('adding-comment.html', s=s)
 
-            def get(self):
-                blog_id = self.request.get("post_id")
+    def get(self):
+        if self.user:
+            blog_id = self.request.get("post_id")
+            if blog_id:
                 self.render_front(blog_id)
+        else:
+            self.redirect('/blog/login')
 
 
 class EditComment(MainBlogPage):
-    def get(self):
-        comment_id=self.request.get("comment_id")
-        comment_obj=PER_COMMENT.get_by_id(int(comment_id))
-        if comment_obj:
-            self.render('edit-comment.html', comment_obj=comment_obj)
-        else:
-            self.redirect('/blog')
-    def post(self):
-        comment=self.request.get("comment")
-        comment_id = self.request.get("comment_id")
-        comment_obj = PER_COMMENT.get_by_id(int(comment_id))
-        if comment_obj:
-            comment_obj.comment=comment
-            comment_obj.put()
-            comment_obj.put()
-            self.redirect('/blog')
 
+    def get(self):
+        if self.user:
+            comment_id = self.request.get("comment_id")
+            comment_obj = PER_COMMENT.get_by_id(int(comment_id))
+            if comment_obj:
+                self.render('edit-comment.html',
+                            comment_obj=comment_obj)
+            else:
+                self.redirect('/blog')
+        else:
+            self.redirect('/blog/login')
+
+    def post(self):
+        if self.user:
+            comment = self.request.get("comment")
+            comment_id = self.request.get("comment_id")
+            comment_obj = PER_COMMENT.get_by_id(int(comment_id))
+            if comment_obj:
+                comment_obj.comment = comment
+                comment_obj.put()
+                comment_obj.put()
+                self.redirect('/blog')
+        else:
+            self.redirect('/blog/login')
 
 
 app = webapp2.WSGIApplication([('/blog/newpost', BlogPage),
                                ('/blog/(\d+)', Permalink),
                                ('/blog', MainBlogPage),
+                               ('/', MainBlogPage),
                                ('/blog/register', Register),
                                ('/blog/welcome', ThanksHandler),
                                ('/blog/login', Login),
@@ -641,5 +612,5 @@ app = webapp2.WSGIApplication([('/blog/newpost', BlogPage),
                                ('/blog/postEdition', PostEdition),
                                ('/blog/addcomment', AddComment),
                                ('/blog/comment', AddingComment),
-                               ('/blog/editComment',EditComment),
+                               ('/blog/editComment', EditComment),
                                ], debug=True)
