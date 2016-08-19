@@ -25,6 +25,12 @@ secret = 'Navjot'
 
 
 class COMMENT(db.Model):
+    """ This class makes four entries to the data store.
+    comment_id will correspond to the blog id where comment is being made.
+    comment_list will contain list of all users who are not authorize to
+    comment the blog. This includes owner of blog and users who commented blog
+    already.
+    """
     comment_id = db.IntegerProperty(required=True)
     comment_list = db.StringListProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
@@ -32,6 +38,10 @@ class COMMENT(db.Model):
 
 
 class PER_COMMENT(db.Model):
+    """In this class, per_comment_id will contain id of each individual comment.
+    owner_comment corresponds to owner of comment and comment corresponds to
+    comment whihc is made by user
+    """
     per_comment_id = db.IntegerProperty()
     owner_comment = db.StringProperty()
     comment = db.TextProperty()
@@ -45,6 +55,12 @@ class Blog(db.Model):
 
 
 class LIKE(db.Model):
+    """In this class c_post_id contains the id of the post/blog.
+    Every blog has a like button.
+    c_likes contains number of likes each blog.
+    like_list contains users who likes the blog and therefore not
+    authorize to like again.
+    """
     c_post_id = db.IntegerProperty(required=True)
     c_likes = db.IntegerProperty()
     like_list = db.StringListProperty()
@@ -55,12 +71,12 @@ class User(db.Model):
     user_pw_hash = db.StringProperty(required=True)
     user_email = db.StringProperty(required=True)
 
-# returns object to that id
+    # returns object to that id
     @classmethod
     def by_id(cls, uid):
         return User.get_by_id(uid, parent=users_key())
 
-# returnd object to name.
+    # returns object to name.
     @classmethod
     def by_name(cls, name):
         u = User.all().filter('user_name =', name).get()
@@ -85,16 +101,16 @@ def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
 
-# make_secure_val return a encrypted hmac value.
 
 
 def make_secure_val(val):
+    # make_secure_val return a encrypted hmac value.
     return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
-# this check whether the value received from browser matched the one
-# in the database.
 
 
 def check_secure_val(secure_val):
+    # this check whether the value received from browser matched the one
+    # in the database.
     val = secure_val.split('|')[0]
     if secure_val == make_secure_val(val):
         return val
@@ -112,7 +128,7 @@ class MainHandler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
-# Setting cookies which will be used to differentiate a valid user.
+    # Setting cookies which will be used to differentiate a valid user.
     def set_secure_cookie(self, name, val):
         cookie_val = make_secure_val(val)
         self.response.headers.add_header(
@@ -123,15 +139,15 @@ class MainHandler(webapp2.RequestHandler):
         cookie_val = self.request.cookies.get(name)
         return cookie_val and check_secure_val(cookie_val)
 
-# cookie 'user-id' being set for user will be key id.
+    # cookie 'user-id' being set for user will be key id.
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key().id()))
 
-# logout will simply remove the user_id cookie
+    # logout will simply remove the user_id cookie
     def logout(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
-# For every request, initialize function will get call and then populate
+    # For every request, initialize function will get call and then populate
     # uid and user
     def initialize(self, *a, **kw):
         webapp2.RequestHandler.initialize(self, *a, **kw)
@@ -142,12 +158,12 @@ class MainHandler(webapp2.RequestHandler):
 def users_key(group='default'):
     return db.Key.from_path('User', group)
 
-# class Register generates the sign-up page and then act on post
-# of sign-up page form.
-# IF data valid, sets the cookie for that user.
 
 
 class Register(MainHandler):
+    """ class Register generates the sign-up page and then act on post
+     of sign-up page form.
+     IF data valid, sets the cookie for that user."""
 
     def send_data(self, file, items=""):
         self.render(file, items=items)
@@ -222,6 +238,7 @@ class ThanksHandler(webapp2.RequestHandler):
             self.response.out.write("Welcome " + user_name)
         else:
             self.redirect('/blog')
+
 
 class Login(MainHandler):
 
@@ -367,7 +384,6 @@ class MainBlogPage(MainHandler):
     def get(self):
             self.render_front()
 
-
     def post(self):
         if self.user:
             post_id = self.request.get("post_id")
@@ -393,9 +409,6 @@ class MainBlogPage(MainHandler):
                         current_user=self.user.user_name)
                 else:
                     self.redirect('/blog/addcomment?post_id=' + post_id)
-                    pass
-            else:
-                pass
 
             like_button_id = self.request.get("like_button_id")
             like_error_id = ""
@@ -422,8 +435,6 @@ class MainBlogPage(MainHandler):
                     s.put()
                     s.put()
                     self.redirect('/blog')
-            else:
-                pass
 
             delete_post_id = self.request.get("delete_post_id")
             if delete_post_id:
@@ -432,15 +443,11 @@ class MainBlogPage(MainHandler):
                     s.delete()
                     s.delete()
                     self.redirect('/blog')
-                #    self.render_front(current_user=self.user.user_name)
                 else:
                     delete_error_id = int(delete_post_id)
                     del_error = "Only Owner is authorize to delete a blog"
                     self.render_front(delete_error=del_error,
                                       delete_error_id=delete_error_id)
-
-            else:
-                pass
 
             each_comment_id_for_edit = self.request.get(
                 "each_comment_id_for_edit")
@@ -462,8 +469,6 @@ class MainBlogPage(MainHandler):
             if each_comment_id_for_delete:
                 comment_obj = PER_COMMENT.get_by_id(
                     int(each_comment_id_for_delete))
-                logging.info(comment_obj.owner_comment)
-                logging.info("DELETE REQUEST")
                 if comment_obj.owner_comment == self.user.user_name:
                     comment_obj.delete()
                     comment_obj.delete()
@@ -523,19 +528,16 @@ class PostEdition(MainHandler):
         else:
             self.redirect("/blog")
 
+
 class AddingComment(MainHandler):
 
     def post(self):
         if self.user:
-            logging.info("****************************01")
             blog_id = self.request.get("blog_id")
             comment = self.request.get("comment")
             if comment:
-
-                logging.info("****************************02")
                 comment_obj = COMMENT.get_by_id(int(blog_id))
                 if comment_obj and blog_id in comment_obj.comment_list:
-                    logging.info("*************************************03")
                     list_of_comment = comment_obj.comment_list
                     list_of_comment.append(comment)
                     comment_obj.put()
