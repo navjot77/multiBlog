@@ -1,5 +1,7 @@
 # multiBlog
 A social blogging web application.
+![blog_screenshot](https://cloud.githubusercontent.com/assets/15641327/20195577/0004b20e-a74c-11e6-84c6-bbc6db9084fa.png)
+
 ## Project Specifications:
 1. Create a Basic Blog
   
